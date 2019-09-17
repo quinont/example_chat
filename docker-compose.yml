@@ -1,0 +1,45 @@
+version: '3'
+services:
+  nodechat:
+    #restart: always
+    build: nodechat/
+    links:
+      - mongo:mongo
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=nodechat"
+      - "traefik.port=5000"
+      - "traefik.frontend.rule=Host:ws.chat.local"
+      - "traefik.backend.loadbalancer.stickiness=true"
+      - "traefik.backend.loadbalancer.stickiness.cookieName=cookiechat"
+    depends_on:
+      - mongo
+      - traefik
+  estatico:
+    restart: always
+    image: nginx:latest
+    volumes:
+      - ./static:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=estatico"
+      - "traefik.port=80"
+      - "traefik.frontend.rule=Host:chat.local"
+    depends_on:
+      - mongo
+      - traefik
+  traefik:
+    image: traefik
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.toml:/etc/traefik/traefik.toml:ro
+    ports:
+      - "80:80"
+      - "8080:8080"
+  mongo:
+    image: mongo:latest
+    restart: always
+  redis:
+    image: redis:latest
+    restart: always
